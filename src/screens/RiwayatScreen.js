@@ -211,7 +211,6 @@ export default function RiwayatScreen({ storeInfo }) {
         transaction={selectedTxForReceipt}
         storeInfo={storeInfo}
         cashierName={selectedTxForReceipt?.cashierName}
-        shiftName={selectedTxForReceipt?.shiftName}
         onClose={() => setSelectedTxForReceipt(null)}
       />
     </View>

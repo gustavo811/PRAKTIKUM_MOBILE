@@ -6,9 +6,6 @@ import { INITIAL_PRODUCTS, INITIAL_EMPLOYEES, INITIAL_STORE_INFO } from '../cons
 const STORAGE_KEYS = {
   PRODUCTS: '@kasirku_products_v1',
   TRANSACTIONS: '@kasirku_transactions_v1',
-  ACTIVE_SHIFT: '@kasirku_active_shift_v1',
-  SHIFT_HISTORY: '@kasirku_shift_history_v1',
-  ATTENDANCE_LOGS: '@kasirku_attendance_logs_v1',
   EMPLOYEES: '@kasirku_employees_v1',
   STORE_INFO: '@kasirku_store_info_v1',
 };
@@ -125,93 +122,6 @@ export const storage = {
     }
   },
 
-  // ==================== MANAJEMEN SHIFT ====================
-  async getActiveShift() {
-    try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_SHIFT);
-      if (data) return JSON.parse(data);
-      // Buat default active shift jika belum ada
-      const defaultShift = {
-        id: 'shift-' + Date.now().toString().slice(-6),
-        name: 'Shift Pagi',
-        cashierName: 'Sarah Amelia',
-        cashierId: 'emp-001',
-        startTime: new Date().toISOString(),
-        openingCash: 200000, // Rp 200.000 modal awal default
-        status: 'OPEN',
-      };
-      await this.setActiveShift(defaultShift);
-      return defaultShift;
-    } catch (e) {
-      console.error('Error getActiveShift:', e);
-      return null;
-    }
-  },
-
-  async setActiveShift(shift) {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_SHIFT, JSON.stringify(shift));
-      return true;
-    } catch (e) {
-      console.error('Error setActiveShift:', e);
-      return false;
-    }
-  },
-
-  async getShiftHistory() {
-    try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.SHIFT_HISTORY);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      console.error('Error getShiftHistory:', e);
-      return [];
-    }
-  },
-
-  async closeActiveShift(closingData) {
-    try {
-      const activeShift = await this.getActiveShift();
-      const history = await this.getShiftHistory();
-      
-      const closedShiftRecord = {
-        ...activeShift,
-        ...closingData,
-        endTime: new Date().toISOString(),
-        status: 'CLOSED',
-      };
-
-      const updatedHistory = [closedShiftRecord, ...history];
-      await AsyncStorage.setItem(STORAGE_KEYS.SHIFT_HISTORY, JSON.stringify(updatedHistory));
-      
-      // Hapus / null-kan active shift
-      await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_SHIFT);
-      return closedShiftRecord;
-    } catch (e) {
-      console.error('Error closeActiveShift:', e);
-      return null;
-    }
-  },
-
-  // ==================== PRESENSI PEKERJA ====================
-  async getAttendanceLogs() {
-    try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.ATTENDANCE_LOGS);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      console.error('Error getAttendanceLogs:', e);
-      return [];
-    }
-  },
-
-  async saveAttendanceLogs(logs) {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.ATTENDANCE_LOGS, JSON.stringify(logs));
-      return true;
-    } catch (e) {
-      console.error('Error saveAttendanceLogs:', e);
-      return false;
-    }
-  },
 
   // ==================== PEKERJA / USERS ====================
   async getEmployees() {

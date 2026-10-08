@@ -163,9 +163,3 @@ export const INITIAL_EMPLOYEES = [
     phone: '0812-9988-7766',
   },
 ];
-
-export const SHIFT_TYPES = [
-  { id: 'Pagi', label: 'Shift Pagi (08:00 - 15:00)', icon: 'sunny-outline', standardStart: '08:00' },
-  { id: 'Siang', label: 'Shift Siang (12:00 - 18:00)', icon: 'partly-sunny-outline', standardStart: '12:00' },
-  { id: 'Malam', label: 'Shift Malam (15:00 - 22:00)', icon: 'moon-outline', standardStart: '15:00' },
-];

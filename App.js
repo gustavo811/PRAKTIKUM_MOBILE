@@ -32,7 +32,6 @@ export default function App() {
 
   // Data Terpusat
   const [products, setProducts] = useState([]);
-  const [activeShift, setActiveShift] = useState(null);
   const [storeInfo, setStoreInfo] = useState(null);
 
   // Inisialisasi Aplikasi Saat Start
@@ -54,11 +53,7 @@ export default function App() {
       const loadedProducts = await storage.getProducts();
       setProducts(loadedProducts);
 
-      // 3. Muat shift aktif
-      const loadedShift = await storage.getActiveShift();
-      setActiveShift(loadedShift);
-
-      // 4. Muat informasi toko
+      // 3. Muat informasi toko
       const loadedStore = await storage.getStoreInfo();
       setStoreInfo(loadedStore);
     } catch (e) {
@@ -73,10 +68,6 @@ export default function App() {
     setProducts(list);
   };
 
-  const handleRefreshShift = async () => {
-    const s = await storage.getActiveShift();
-    setActiveShift(s);
-  };
 
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
@@ -151,7 +142,6 @@ export default function App() {
             products={products}
             onRefreshProducts={handleRefreshProducts}
             currentUser={currentUser}
-            activeShift={activeShift}
             storeInfo={storeInfo}
           />
         )}

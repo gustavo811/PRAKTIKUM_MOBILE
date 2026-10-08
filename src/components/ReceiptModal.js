@@ -19,7 +19,6 @@ export default function ReceiptModal({
   transaction,
   storeInfo,
   cashierName,
-  shiftName,
   onClose,
 }) {
   if (!transaction) return null;

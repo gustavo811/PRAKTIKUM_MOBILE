@@ -24,7 +24,6 @@ export default function KasirScreen({
   products,
   onRefreshProducts,
   currentUser,
-  activeShift,
   storeInfo,
 }) {
   const [selectedCategory, setSelectedCategory] = useState('Semua');
@@ -158,8 +157,6 @@ export default function KasirScreen({
         ...transaction,
         cashierId: currentUser?.id,
         cashierName: currentUser?.name || 'Kasir',
-        shiftId: activeShift?.id || 'shift-umum',
-        shiftName: activeShift?.name || 'Shift Umum',
       };
       await storage.addTransaction(fullTransaction);
 
@@ -323,7 +320,6 @@ export default function KasirScreen({
         transaction={completedTransaction}
         storeInfo={storeInfo}
         cashierName={currentUser?.name}
-        shiftName={activeShift?.name}
         onClose={() => {
           setReceiptModalVisible(false);
           setCompletedTransaction(null);
