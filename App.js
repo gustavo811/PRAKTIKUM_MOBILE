@@ -23,14 +23,12 @@ import Header from './src/components/Header';
 import AuthScreen from './src/screens/AuthScreen';
 import KasirScreen from './src/screens/KasirScreen';
 import MenuScreen from './src/screens/MenuScreen';
-import ShiftScreen from './src/screens/ShiftScreen';
-import PresensiScreen from './src/screens/PresensiScreen';
 import RiwayatScreen from './src/screens/RiwayatScreen';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('KASIR'); // 'KASIR' | 'MENU' | 'SHIFT' | 'PRESENSI' | 'RIWAYAT'
+  const [activeTab, setActiveTab] = useState('KASIR'); // 'KASIR' | 'MENU' | 'RIWAYAT'
 
   // Data Terpusat
   const [products, setProducts] = useState([]);
@@ -109,18 +107,6 @@ export default function App() {
       iconActive: 'restaurant',
     },
     {
-      id: 'SHIFT',
-      label: 'Shift Kas',
-      icon: 'wallet-outline',
-      iconActive: 'wallet',
-    },
-    {
-      id: 'PRESENSI',
-      label: 'Presensi',
-      icon: 'time-outline',
-      iconActive: 'time',
-    },
-    {
       id: 'RIWAYAT',
       label: 'Riwayat',
       icon: 'receipt-outline',
@@ -154,10 +140,8 @@ export default function App() {
       {/* Header Atas Konsisten */}
       <Header
         currentUser={currentUser}
-        activeShift={activeShift}
         storeInfo={storeInfo}
         onLogout={handleLogout}
-        onOpenShiftModal={() => setActiveTab('SHIFT')}
       />
 
       {/* Konten Halaman Sesuai Tab Aktif */}
@@ -176,16 +160,6 @@ export default function App() {
             products={products}
             onRefreshProducts={handleRefreshProducts}
           />
-        )}
-        {activeTab === 'SHIFT' && (
-          <ShiftScreen
-            activeShift={activeShift}
-            onRefreshShift={handleRefreshShift}
-            currentUser={currentUser}
-          />
-        )}
-        {activeTab === 'PRESENSI' && (
-          <PresensiScreen currentUser={currentUser} />
         )}
         {activeTab === 'RIWAYAT' && (
           <RiwayatScreen storeInfo={storeInfo} />

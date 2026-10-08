@@ -44,7 +44,6 @@ export default function ReceiptModal({
         `No. Nota : ${transaction.id}\n` +
         `Tanggal  : ${formatDateTime(transaction.date)}\n` +
         `Kasir    : ${cashierName || 'Sarah Amelia'}\n` +
-        `Shift    : ${shiftName || 'Shift Pagi'}\n` +
         `Pelanggan: ${transaction.customerName || 'Umum'}\n` +
         `------------------------------\n` +
         `*DETAIL PESANAN:*\n` +
@@ -133,9 +132,9 @@ export default function ReceiptModal({
                   </Text>
                 </View>
                 <View style={styles.metaRow}>
-                  <Text style={styles.metaLabel}>Kasir / Shift</Text>
+                  <Text style={styles.metaLabel}>Kasir</Text>
                   <Text style={styles.metaValue}>
-                    {cashierName || 'Kasir'} ({shiftName || 'Shift'})
+                    {cashierName || 'Kasir'}
                   </Text>
                 </View>
                 <View style={styles.metaRow}>

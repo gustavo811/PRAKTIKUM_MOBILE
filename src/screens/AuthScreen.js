@@ -28,13 +28,10 @@ export default function AuthScreen({ onLoginSuccess }) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [selectedRole, setSelectedRole] = useState('Kasir & Barista');
+  const [selectedRole, setSelectedRole] = useState('Kasir');
 
   const ROLES = [
-    'Kasir & Barista',
-    'Kasir & Kitchen',
-    'Supervisor',
-    'Admin',
+    'Kasir',
   ];
 
   // Muat akun tersimpan dari secureStorage jika ada
@@ -166,7 +163,7 @@ export default function AuthScreen({ onLoginSuccess }) {
           </View>
           <Text style={styles.appTitle}>KasirKu</Text>
           <Text style={styles.appSubtitle}>
-            Sistem Kasir, Presensi & Shift Modern Berbasis Mobile
+            Sistem Kasir Modern Berbasis Mobile
           </Text>
           <View style={styles.dualStorageBadge}>
             <Ionicons name="shield-checkmark" size={13} color={THEME.colors.successDark} />
@@ -272,21 +269,22 @@ export default function AuthScreen({ onLoginSuccess }) {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Pilih Posisi / Role:</Text>
+                <Text style={styles.inputLabel}>Posisi Kerja:</Text>
                 <View style={styles.roleGrid}>
                   {ROLES.map((role) => (
                     <TouchableOpacity
                       key={role}
                       style={[
                         styles.roleChip,
-                        selectedRole === role && styles.roleChipActive,
+                        styles.roleChipActive,
                       ]}
                       onPress={() => setSelectedRole(role)}
                     >
+                      <Ionicons name="briefcase-outline" size={14} color={THEME.colors.primaryDark} style={{ marginRight: 6 }} />
                       <Text
                         style={[
                           styles.roleChipText,
-                          selectedRole === role && styles.roleChipTextActive,
+                          styles.roleChipTextActive,
                         ]}
                       >
                         {role}
@@ -333,7 +331,7 @@ export default function AuthScreen({ onLoginSuccess }) {
         <View style={styles.demoCard}>
           <View style={styles.demoHeader}>
             <Ionicons name="flash-outline" size={16} color={THEME.colors.accent} />
-            <Text style={styles.demoTitle}>Akun Demo Cepat (1-Klik Isi):</Text>
+            <Text style={styles.demoTitle}>Akun Demo Kasir (1-Klik Isi):</Text>
           </View>
           <View style={styles.demoGrid}>
             <TouchableOpacity
@@ -341,31 +339,7 @@ export default function AuthScreen({ onLoginSuccess }) {
               onPress={() => fillDemoAccount('sarah', '123456')}
             >
               <Text style={styles.demoChipName}>Sarah Amelia</Text>
-              <Text style={styles.demoChipRole}>Kasir & Barista</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.demoChip}
-              onPress={() => fillDemoAccount('budi', '123456')}
-            >
-              <Text style={styles.demoChipName}>Budi Santoso</Text>
-              <Text style={styles.demoChipRole}>Kasir & Kitchen</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.demoChip}
-              onPress={() => fillDemoAccount('dina', '123456')}
-            >
-              <Text style={styles.demoChipName}>Dina Permata</Text>
-              <Text style={styles.demoChipRole}>Supervisor</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.demoChip}
-              onPress={() => fillDemoAccount('admin', 'admin123')}
-            >
-              <Text style={styles.demoChipName}>Admin Utama</Text>
-              <Text style={styles.demoChipRole}>Super Admin</Text>
+              <Text style={styles.demoChipRole}>Kasir</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -102,10 +102,10 @@ export default function MenuScreen({ products, onRefreshProducts }) {
           category === 'Minuman'
             ? 'cafe-outline'
             : category === 'Makanan'
-            ? 'restaurant-outline'
-            : category === 'Snack'
-            ? 'fast-food-outline'
-            : 'gift-outline',
+              ? 'restaurant-outline'
+              : category === 'Snack'
+                ? 'fast-food-outline'
+                : 'gift-outline',
       };
       await storage.addProduct(newProd);
     }

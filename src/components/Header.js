@@ -15,10 +15,8 @@ import { THEME } from '../constants/theme';
 
 export default function Header({
   currentUser,
-  activeShift,
   storeInfo,
   onLogout,
-  onOpenShiftModal,
 }) {
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
@@ -55,23 +53,6 @@ export default function Header({
       </View>
 
       <View style={styles.rightContainer}>
-        {/* Status Shift Aktif Badge */}
-        <TouchableOpacity
-          style={styles.shiftBadge}
-          onPress={onOpenShiftModal}
-          activeOpacity={0.8}
-        >
-          <View
-            style={[
-              styles.shiftDot,
-              { backgroundColor: activeShift ? THEME.colors.success : THEME.colors.danger },
-            ]}
-          />
-          <Text style={styles.shiftText} numberOfLines={1}>
-            {activeShift ? `${activeShift.name || 'Shift Aktif'}` : 'Shift Tutup'}
-          </Text>
-        </TouchableOpacity>
-
         {/* User Avatar Button */}
         <TouchableOpacity
           style={styles.avatarButton}
@@ -133,24 +114,6 @@ export default function Header({
               <Text style={styles.userUsername}>@{currentUser?.username || 'user'}</Text>
             </View>
 
-            {/* Shift Info Card */}
-            <View style={styles.shiftInfoCard}>
-              <View style={styles.shiftInfoRow}>
-                <Ionicons name="time-outline" size={18} color={THEME.colors.primary} />
-                <Text style={styles.shiftInfoLabel}>Shift Operasional:</Text>
-                <Text style={styles.shiftInfoValue}>
-                  {activeShift?.name || 'Belum Buka Shift'}
-                </Text>
-              </View>
-              <View style={styles.shiftInfoRow}>
-                <Ionicons name="wallet-outline" size={18} color={THEME.colors.accent} />
-                <Text style={styles.shiftInfoLabel}>Modal Kasir:</Text>
-                <Text style={styles.shiftInfoValue}>
-                  Rp {(activeShift?.openingCash || 0).toLocaleString('id-ID')}
-                </Text>
-              </View>
-            </View>
-
             {/* Tombol Logout */}
             <TouchableOpacity
               style={styles.logoutBtn}
@@ -208,29 +171,6 @@ const styles = StyleSheet.create({
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  shiftBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.surfaceSubtle,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    maxWidth: 130,
-  },
-  shiftDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  shiftText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: THEME.colors.textPrimary,
   },
   avatarButton: {
     marginLeft: 4,
@@ -335,30 +275,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.textMuted,
     marginTop: 4,
-  },
-  shiftInfoCard: {
-    backgroundColor: THEME.colors.surfaceSubtle,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    gap: 8,
-  },
-  shiftInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  shiftInfoLabel: {
-    fontSize: 12,
-    color: THEME.colors.textSecondary,
-    marginLeft: 6,
-    flex: 1,
-  },
-  shiftInfoValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: THEME.colors.textPrimary,
+    marginBottom: 8,
   },
   logoutBtn: {
     backgroundColor: THEME.colors.danger,

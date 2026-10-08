@@ -217,7 +217,18 @@ export const storage = {
   async getEmployees() {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.EMPLOYEES);
-      if (data) return JSON.parse(data);
+      if (data) {
+        let employees = JSON.parse(data);
+        // Hapus akun demo lama dan pastikan Sarah role Kasir
+        employees = employees
+          .filter((emp) => !['budi', 'dina', 'admin'].includes(emp.username))
+          .map((emp) => (emp.username === 'sarah' ? { ...emp, role: 'Kasir' } : emp));
+        if (employees.length === 0) {
+          employees = INITIAL_EMPLOYEES;
+        }
+        await AsyncStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
+        return employees;
+      }
       await AsyncStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(INITIAL_EMPLOYEES));
       return INITIAL_EMPLOYEES;
     } catch (e) {
