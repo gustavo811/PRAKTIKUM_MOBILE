@@ -1,45 +1,45 @@
 // Sistem Tema, Warna, Tipografi & Bayangan KasirKu
 export const THEME = {
   colors: {
-    primary: '#0D9488',       // Teal 600 - Segar & Profesional
-    primaryDark: '#115E59',   // Teal 800
-    primaryLight: '#CCFBF1',  // Teal 100
+    primary: '#ff0404ff',       // Teal 600 - Segar & Profesional
+    primaryDark: '#ff0000ff',   // Teal 800
+    primaryLight: '#ff0000ff',  // Teal 100
     primaryMuted: '#E6FFFA',
-    
+
     accent: '#F59E0B',        // Amber 500
     accentLight: '#FEF3C7',
-    
-    success: '#10B981',       // Emerald 500
+
+    success: '#e50808ff',       // Emerald 500
     successLight: '#D1FAE5',
-    successDark: '#065F46',
-    
+    successDark: '#ff0000ff',
+
     danger: '#EF4444',        // Red 500
     dangerLight: '#FEE2E2',
     dangerDark: '#991B1B',
-    
+
     warning: '#F97316',       // Orange 500
     warningLight: '#FFEDD5',
-    
+
     info: '#3B82F6',          // Blue 500
     infoLight: '#DBEAFE',
-    
+
     bg: '#F8FAFC',            // Slate 50
     surface: '#FFFFFF',
     surfaceSubtle: '#F1F5F9', // Slate 100
     border: '#E2E8F0',        // Slate 200
     borderStrong: '#CBD5E1',  // Slate 300
-    
+
     textPrimary: '#0F172A',   // Slate 900
     textSecondary: '#475569', // Slate 600
     textMuted: '#94A3B8',     // Slate 400
     textWhite: '#FFFFFF',
-    
+
     // Receipt Colors
     receiptPaper: '#FFFDF9',
     receiptBorder: '#E7E2D8',
     receiptText: '#1C1917',
   },
-  
+
   shadows: {
     sm: {
       shadowColor: '#0F172A',
@@ -63,7 +63,7 @@ export const THEME = {
       elevation: 8,
     },
   },
-  
+
   radius: {
     xs: 4,
     sm: 8,
@@ -72,7 +72,7 @@ export const THEME = {
     xl: 24,
     full: 9999,
   },
-  
+
   spacing: {
     xs: 4,
     sm: 8,

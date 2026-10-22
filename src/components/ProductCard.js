@@ -1,4 +1,6 @@
 // Komponen ProductCard - Kartu Produk POS dengan Kontrol Jumlah & Stok
+// external styles
+
 
 import React from 'react';
 import {
@@ -39,7 +41,7 @@ export default function ProductCard({
       <Text style={styles.productName} numberOfLines={2}>
         {product.name}
       </Text>
-      
+
       {product.description ? (
         <Text style={styles.description} numberOfLines={2}>
           {product.description}

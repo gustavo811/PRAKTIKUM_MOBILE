@@ -1,4 +1,6 @@
 // Layar Utama POS (Point of Sale) KasirKu
+// Custom Function
+// array
 
 import React, { useState } from 'react';
 import {
@@ -151,7 +153,7 @@ export default function KasirScreen({
     try {
       // 1. Kurangi stok produk di database AsyncStorage
       await storage.decreaseProductStock(transaction.items);
-      
+
       // 2. Simpan transaksi ke riwayat
       const fullTransaction = {
         ...transaction,

@@ -1,4 +1,5 @@
 // Layanan Riwayat Transaksi & Ringkasan Omset Keuangan KasirKu
+// loop
 
 import React, { useState, useEffect } from 'react';
 import {

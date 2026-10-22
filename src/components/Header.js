@@ -1,4 +1,5 @@
 // Header Komponen - Status Shift Aktif, Toko, dan Profil Kasir (Logout)
+// external styles
 
 import React, { useState } from 'react';
 import {

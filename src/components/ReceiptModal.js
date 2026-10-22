@@ -57,7 +57,7 @@ export default function ReceiptModal({
         `Metode   : ${transaction.paymentMethod}\n` +
         (transaction.paymentMethod === 'TUNAI'
           ? `Dibayar  : ${formatRupiah(transaction.cashGiven)}\n` +
-            `Kembali  : ${formatRupiah(transaction.changeAmount)}\n`
+          `Kembali  : ${formatRupiah(transaction.changeAmount)}\n`
           : `Status   : LUNAS (QRIS Terverifikasi)\n`) +
         `==============================\n` +
         `${storeInfo?.footerMessage || 'Terima kasih atas kunjungan Anda!'}\n` +

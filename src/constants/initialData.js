@@ -1,4 +1,5 @@
 // Data Awal KasirKu - Info Toko, Menu Katalog, Akun Pekerja
+// array
 
 export const INITIAL_STORE_INFO = {
   name: 'Kopi & Rasa Nusantara',

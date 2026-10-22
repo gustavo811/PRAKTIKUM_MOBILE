@@ -1,4 +1,6 @@
 // Layanan Manajemen Menu & Katalog Harga Produk
+// loop
+// array
 
 import React, { useState } from 'react';
 import {
@@ -188,23 +190,6 @@ export default function MenuScreen({ products, onRefreshProducts }) {
         </View>
       </View>
 
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color={THEME.colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Cari menu berdasarkan nama..."
-          placeholderTextColor={THEME.colors.textMuted}
-          value={search}
-          onChangeText={setSearch}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color={THEME.colors.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
-
       {/* Category Tabs */}
       <ScrollView
         horizontal
@@ -360,6 +345,23 @@ export default function MenuScreen({ products, onRefreshProducts }) {
           </View>
         }
       />
+
+      {/* Search Input dipindah ke Bagian Bawah */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search-outline" size={18} color={THEME.colors.textMuted} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cari menu berdasarkan nama..."
+          placeholderTextColor={THEME.colors.textMuted}
+          value={search}
+          onChangeText={setSearch}
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')}>
+            <Ionicons name="close-circle" size={18} color={THEME.colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Modal Tambah / Edit Menu */}
       <Modal
@@ -541,11 +543,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: THEME.colors.surface,
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginVertical: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: THEME.radius.md,
     borderWidth: 1,
     borderColor: THEME.colors.border,
@@ -565,7 +567,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: THEME.colors.surfaceSubtle,
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },
@@ -583,10 +585,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   menuCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: THEME.colors.surface,
     borderRadius: THEME.radius.lg,
     padding: 14,
     marginBottom: 12,
