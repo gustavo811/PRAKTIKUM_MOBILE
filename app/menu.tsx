@@ -23,6 +23,7 @@ export default function MenuScreen() {
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Semua');
+  const [stockFilter, setStockFilter] = useState<'ALL' | 'AVAILABLE' | 'LOW' | 'EMPTY'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal State
@@ -138,11 +139,49 @@ export default function MenuScreen() {
     );
   };
 
+  // Perhitungan statistik stok produk
+  const lowStockCount = products.filter((p) => (p.stock || 0) > 0 && (p.stock || 0) <= 5).length;
+  const emptyStockCount = products.filter((p) => (p.stock || 0) <= 0).length;
+  const availableCount = products.filter((p) => (p.stock || 0) > 5).length;
+
   const filtered = products.filter((p) => {
     const matchCat = selectedCategory === 'Semua' || p.category === selectedCategory;
     const matchName = p.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchName;
+
+    let matchStock = true;
+    const currentStock = p.stock || 0;
+    if (stockFilter === 'AVAILABLE') {
+      matchStock = currentStock > 5;
+    } else if (stockFilter === 'LOW') {
+      matchStock = currentStock > 0 && currentStock <= 5;
+    } else if (stockFilter === 'EMPTY') {
+      matchStock = currentStock <= 0;
+    }
+
+    return matchCat && matchName && matchStock;
   });
+
+  const renderStockBadge = (stockNum: number) => {
+    if (stockNum <= 0) {
+      return (
+        <View style={[styles.stockBadge, styles.stockEmpty]}>
+          <Text style={[styles.stockText, styles.stockTextEmpty]}>❌ Habis</Text>
+        </View>
+      );
+    }
+    if (stockNum <= 5) {
+      return (
+        <View style={[styles.stockBadge, styles.stockWarning]}>
+          <Text style={[styles.stockText, styles.stockTextWarning]}>⚠️ Sisa {stockNum}</Text>
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.stockBadge, styles.stockSafe]}>
+        <Text style={[styles.stockText, styles.stockTextSafe]}>Stok: {stockNum}</Text>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -157,7 +196,19 @@ export default function MenuScreen() {
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerTitle}>Katalog Menu & Stok</Text>
-          <Text style={styles.headerSubtitle}>{products.length} Menu Terdaftar</Text>
+          <View style={styles.headerSubtitleRow}>
+            <Text style={styles.headerSubtitle}>{products.length} Menu</Text>
+            {lowStockCount > 0 && (
+              <View style={styles.miniAlertBadge}>
+                <Text style={styles.miniAlertBadgeText}>⚠️ {lowStockCount} Menipis</Text>
+              </View>
+            )}
+            {emptyStockCount > 0 && (
+              <View style={styles.miniDangerBadge}>
+                <Text style={styles.miniDangerBadgeText}>❌ {emptyStockCount} Habis</Text>
+              </View>
+            )}
+          </View>
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -209,6 +260,47 @@ export default function MenuScreen() {
         />
       </View>
 
+      {/* FILTER STATUS STOK (KOMPONEN MODIFIKASI MODUL 2) */}
+      <View style={styles.stockFilterWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stockFilterList}>
+          <TouchableOpacity
+            style={[styles.stockFilterBtn, stockFilter === 'ALL' && styles.stockFilterBtnActive]}
+            onPress={() => setStockFilter('ALL')}
+          >
+            <Text style={[styles.stockFilterText, stockFilter === 'ALL' && styles.stockFilterTextActive]}>
+              Semua ({products.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.stockFilterBtn, stockFilter === 'AVAILABLE' && styles.stockFilterBtnActive]}
+            onPress={() => setStockFilter('AVAILABLE')}
+          >
+            <Ionicons name="checkmark-circle-outline" size={13} color={stockFilter === 'AVAILABLE' ? '#FFF' : '#059669'} />
+            <Text style={[styles.stockFilterText, stockFilter === 'AVAILABLE' ? styles.stockFilterTextActive : { color: '#059669' }]}>
+              Tersedia ({availableCount})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.stockFilterBtn, styles.stockFilterBtnLow, stockFilter === 'LOW' && styles.stockFilterBtnLowActive]}
+            onPress={() => setStockFilter('LOW')}
+          >
+            <Ionicons name="warning-outline" size={13} color={stockFilter === 'LOW' ? '#FFF' : '#D97706'} />
+            <Text style={[styles.stockFilterText, stockFilter === 'LOW' ? styles.stockFilterTextActive : { color: '#D97706' }]}>
+              Menipis ({lowStockCount})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.stockFilterBtn, styles.stockFilterBtnEmpty, stockFilter === 'EMPTY' && styles.stockFilterBtnEmptyActive]}
+            onPress={() => setStockFilter('EMPTY')}
+          >
+            <Ionicons name="alert-circle-outline" size={13} color={stockFilter === 'EMPTY' ? '#FFF' : '#DC2626'} />
+            <Text style={[styles.stockFilterText, stockFilter === 'EMPTY' ? styles.stockFilterTextActive : { color: '#DC2626' }]}>
+              Habis ({emptyStockCount})
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
       {/* DAFTAR MENU */}
       {isLoading ? (
         <View style={styles.centerContainer}>
@@ -221,26 +313,31 @@ export default function MenuScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="cube-outline" size={48} color={THEME.colors.textMuted} />
+              <Text style={styles.emptyTitle}>Menu tidak ditemukan</Text>
+              <Text style={styles.emptySub}>Coba sesuaikan filter kategori, pencarian, atau status stok.</Text>
+              {(selectedCategory !== 'Semua' || search !== '' || stockFilter !== 'ALL') && (
+                <TouchableOpacity
+                  style={styles.resetFilterBtn}
+                  onPress={() => {
+                    setSelectedCategory('Semua');
+                    setSearch('');
+                    setStockFilter('ALL');
+                  }}
+                >
+                  <Text style={styles.resetFilterText}>Reset Semua Filter</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          }
           renderItem={({ item }) => (
             <View style={styles.menuCard}>
               <View style={styles.menuCardInfo}>
                 <View style={styles.menuTitleRow}>
                   <Text style={styles.menuName}>{item.name}</Text>
-                  <View
-                    style={[
-                      styles.stockBadge,
-                      item.stock > 5 ? styles.stockSafe : styles.stockLow,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.stockText,
-                        item.stock > 5 ? styles.stockTextSafe : styles.stockTextLow,
-                      ]}
-                    >
-                      Stok: {item.stock || 0}
-                    </Text>
-                  </View>
+                  {renderStockBadge(item.stock || 0)}
                 </View>
                 <Text style={styles.menuCat}>{item.category}</Text>
                 <Text style={styles.menuPrice}>{formatRupiah(item.price)}</Text>
@@ -379,6 +476,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.textMuted,
   },
+  headerSubtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+    flexWrap: 'wrap',
+  },
+  miniAlertBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  miniAlertBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  miniDangerBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  miniDangerBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
   addBtn: {
     backgroundColor: THEME.colors.primary,
     flexDirection: 'row',
@@ -472,15 +598,27 @@ const styles = StyleSheet.create({
     color: THEME.colors.textPrimary,
   },
   stockBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   stockSafe: {
     backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
-  stockLow: {
-    backgroundColor: '#FEF2F2',
+  stockWarning: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  stockEmpty: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   stockText: {
     fontSize: 10,
@@ -489,8 +627,89 @@ const styles = StyleSheet.create({
   stockTextSafe: {
     color: '#059669',
   },
-  stockTextLow: {
+  stockTextWarning: {
+    color: '#D97706',
+  },
+  stockTextEmpty: {
     color: '#DC2626',
+  },
+  stockFilterWrap: {
+    marginBottom: 6,
+  },
+  stockFilterList: {
+    paddingHorizontal: 16,
+    gap: 8,
+    alignItems: 'center',
+  },
+  stockFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  stockFilterBtnActive: {
+    backgroundColor: THEME.colors.textPrimary,
+    borderColor: THEME.colors.textPrimary,
+  },
+  stockFilterBtnLow: {
+    borderColor: '#FDE68A',
+    backgroundColor: '#FFFBEB',
+  },
+  stockFilterBtnLowActive: {
+    backgroundColor: '#D97706',
+    borderColor: '#D97706',
+  },
+  stockFilterBtnEmpty: {
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  stockFilterBtnEmptyActive: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
+  stockFilterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.colors.textSecondary,
+  },
+  stockFilterTextActive: {
+    color: '#FFF',
+    fontWeight: '700',
+  },
+  emptyContainer: {
+    padding: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+    marginTop: 8,
+  },
+  emptySub: {
+    fontSize: 12,
+    color: THEME.colors.textMuted,
+    textAlign: 'center',
+    maxWidth: 240,
+  },
+  resetFilterBtn: {
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: THEME.colors.primaryMuted,
+    borderRadius: 8,
+  },
+  resetFilterText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.colors.primaryDark,
   },
   menuCat: {
     fontSize: 11,
