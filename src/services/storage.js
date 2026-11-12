@@ -1,10 +1,11 @@
 // Layanan Local Storage (AsyncStorage) untuk Data Operasional KasirKu
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { INITIAL_PRODUCTS, INITIAL_EMPLOYEES, INITIAL_STORE_INFO } from '../constants/initialData';
+import { INITIAL_EMPLOYEES, INITIAL_STORE_INFO } from '../constants/initialData';
+import { fetchFnBProducts } from './fnbApi';
 
 const STORAGE_KEYS = {
-  PRODUCTS: '@kasirku_products_v1',
+  PRODUCTS: '@kasirku_fnb_products_v2',
   TRANSACTIONS: '@kasirku_transactions_v1',
   EMPLOYEES: '@kasirku_employees_v1',
   STORE_INFO: '@kasirku_store_info_v1',
@@ -16,12 +17,31 @@ export const storage = {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.PRODUCTS);
       if (data) return JSON.parse(data);
-      // Simpan data default pertama kali
-      await this.saveProducts(INITIAL_PRODUCTS);
-      return INITIAL_PRODUCTS;
+
+      // Mengambil data menu FnB langsung dari External API
+      const apiProducts = await fetchFnBProducts();
+      if (apiProducts && apiProducts.length > 0) {
+        await this.saveProducts(apiProducts);
+        return apiProducts;
+      }
+      return [];
     } catch (e) {
       console.error('Error getProducts:', e);
-      return INITIAL_PRODUCTS;
+      return [];
+    }
+  },
+
+  async syncProductsFromApi() {
+    try {
+      const apiProducts = await fetchFnBProducts();
+      if (apiProducts && apiProducts.length > 0) {
+        await this.saveProducts(apiProducts);
+        return apiProducts;
+      }
+      return await this.getProducts();
+    } catch (e) {
+      console.error('Error syncProductsFromApi:', e);
+      return await this.getProducts();
     }
   },
 

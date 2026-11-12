@@ -21,13 +21,16 @@ import PaymentModal from '../src/components/PaymentModal';
 import Header from '../src/components/Header';
 import { storage } from '../src/services/storage';
 import { secureStorage } from '../src/services/secureStorage';
+// 1. Mengimpor Interface Product dari layanan External API FnB
+import { Product } from '../src/services/fnbApi';
 
 export default function KasirScreen() {
   // 1. Penerapan useState untuk mengelola state lokal kasir POS
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [storeInfo, setStoreInfo] = useState<any>(null);
-  const [products, setProducts] = useState<any[]>([]);
+  // Menggunakan Interface Product untuk type-safety daftar menu FnB dari API
+  const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +103,23 @@ export default function KasirScreen() {
     router.push('/menu');
   };
 
+  // Sinkronisasi menu langsung dari External API FnB
+  const handleSyncApi = async () => {
+    try {
+      setIsLoading(true);
+      const freshProducts = await storage.syncProductsFromApi();
+      setProducts(freshProducts);
+      Alert.alert(
+        'Sukses Sinkron API',
+        `Berhasil mengambil ${freshProducts.length} menu FnB langsung dari External API!`
+      );
+    } catch (e) {
+      Alert.alert('Gagal Sinkron', 'Tidak dapat mengambil data menu dari API.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ================= Keranjang & Transaksi Logic =================
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalCartAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -113,36 +133,58 @@ export default function KasirScreen() {
     return matchesCategory && matchesSearch;
   });
 
-  const handleAddToCart = (product: any) => {
-    if (!product.isAvailable || product.stock <= 0) {
-      Alert.alert('Stok Habis', `Maaf, stok produk "${product.name}" sudah habis.`);
-      return;
-    }
-
-    setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.id === product.id);
-      if (existing) {
-        if (existing.quantity >= product.stock) {
-          Alert.alert('Batas Stok', `Maksimal pembelian untuk ${product.name} adalah ${product.stock}.`);
-          return prevCart;
-        }
-        return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
+  // ============================================================================
+  // 3. FUNGSI PROMISE DENGAN resolve() DAN reject()
+  // ============================================================================
+  const validasiStokMenu = (product: Product, currentQty: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!product.isAvailable || product.stock <= 0) {
+        // Panggil reject() saat kondisi gagal (stok habis)
+        reject(`Maaf, stok menu "${product.name}" sudah habis.`);
+      } else if (currentQty >= product.stock) {
+        // Panggil reject() saat melebihi stok yang ada
+        reject(`Maksimal pesanan untuk "${product.name}" adalah ${product.stock} porsi.`);
+      } else {
+        // Panggil resolve() saat kondisi berhasil (stok tersedia)
+        resolve(`Menu "${product.name}" berhasil ditambahkan.`);
       }
-      return [
-        ...prevCart,
-        {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          cost: product.cost || 0,
-          stock: product.stock,
-          quantity: 1,
-          note: '',
-        },
-      ];
     });
+  };
+
+  // ============================================================================
+  // 3. PENGGUNAAN FUNGSI .then() DAN .catch()
+  // ============================================================================
+  const handleAddToCart = (product: Product) => {
+    const existing = cart.find((item) => item.id === product.id);
+    const existingQty = existing ? existing.quantity : 0;
+
+    // Memanggil Promise menggunakan .then() untuk menangkap resolve(), dan .catch() untuk reject()
+    validasiStokMenu(product, existingQty)
+      .then(() => {
+        setCart((prevCart) => {
+          if (existing) {
+            return prevCart.map((item) =>
+              item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+            );
+          }
+          return [
+            ...prevCart,
+            {
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              cost: product.cost || 0,
+              stock: product.stock,
+              quantity: 1,
+              note: '',
+            },
+          ];
+        });
+      })
+      .catch((pesanGagal: string) => {
+        // Menangkap error dari reject()
+        Alert.alert('Batas Stok', pesanGagal);
+      });
   };
 
   const handleDecreaseQuantity = (product: any) => {
@@ -267,6 +309,15 @@ export default function KasirScreen() {
         >
           <Ionicons name="restaurant-outline" size={16} color={THEME.colors.primaryDark} />
           <Text style={styles.actionChipText}>Kelola Menu & Stok</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionChip}
+          onPress={handleSyncApi}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="cloud-download-outline" size={16} color={THEME.colors.primaryDark} />
+          <Text style={styles.actionChipText}>Sync Menu API</Text>
         </TouchableOpacity>
       </View>
 

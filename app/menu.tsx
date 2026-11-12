@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { THEME, formatRupiah } from '../src/constants/theme';
 import { MENU_CATEGORIES } from '../src/constants/initialData';
 import { storage } from '../src/services/storage';
+import { Product } from '../src/services/fnbApi';
 
 export default function MenuScreen() {
   // 1. Penerapan useState untuk mengelola katalog menu produk
@@ -50,6 +51,21 @@ export default function MenuScreen() {
       setProducts(data);
     } catch (e) {
       console.error('Error saat load data produk:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Mengambil menu FnB dari External API dan mengganti display menu lama
+  const syncFromExternalApi = async () => {
+    try {
+      setIsLoading(true);
+      const apiProducts = await storage.syncProductsFromApi();
+      setProducts(apiProducts);
+      Alert.alert('Sukses Sinkron', `Berhasil memuat ${apiProducts.length} menu FnB dari External API!`);
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Gagal mengambil menu dari API external.');
     } finally {
       setIsLoading(false);
     }
@@ -210,14 +226,25 @@ export default function MenuScreen() {
             )}
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={openAddModal}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={20} color="#FFF" />
-          <Text style={styles.addBtnText}>Tambah</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: '#4F46E5' }]}
+            onPress={syncFromExternalApi}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="cloud-download-outline" size={16} color="#FFF" />
+            <Text style={styles.addBtnText}>Sync API</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={openAddModal}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={20} color="#FFF" />
+            <Text style={styles.addBtnText}>Tambah</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* SEARCH BOX */}
