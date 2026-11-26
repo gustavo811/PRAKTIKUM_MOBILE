@@ -1,40 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { secureStorage } from '../src/services/secureStorage';
 import { THEME } from '../src/constants/theme';
+import { useAuth } from '../src/context/AuthContext';
 
 export default function IndexScreen() {
-  // 1. Penerapan useState untuk mengelola state loading pengecekan sesi
-  const [checkingSession, setCheckingSession] = useState(true);
+  const { session, loading } = useAuth();
 
-  // 1. Penerapan useEffect untuk mengambil data awal sesi saat pertama kali render
   useEffect(() => {
-    checkAuthSession();
-  }, []);
-
-  const checkAuthSession = async () => {
-    try {
-      // Ambil data sesi pengguna aktif dari storage
-      const activeUser = await secureStorage.getObject(secureStorage.KEYS.AUTH_USER);
-
-      // Delay kecil untuk transisi splash screen yang halus
-      setTimeout(() => {
-        setCheckingSession(false);
-        // 2. Penerapan router.replace() agar halaman splash terhapus dari stack navigasi
-        if (activeUser && activeUser.username) {
-          router.replace('/kasir');
-        } else {
-          router.replace('/auth');
-        }
-      }, 700);
-    } catch (error) {
-      console.error('Error saat cek sesi:', error);
-      setCheckingSession(false);
+    if (loading) return;
+    if (session) {
+      router.replace('/kasir');
+    } else {
       router.replace('/auth');
     }
-  };
+  }, [session, loading]);
 
   return (
     <View style={styles.container}>

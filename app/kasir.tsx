@@ -20,14 +20,14 @@ import CartModal from '../src/components/CartModal';
 import PaymentModal from '../src/components/PaymentModal';
 import Header from '../src/components/Header';
 import { storage } from '../src/services/storage';
-import { secureStorage } from '../src/services/secureStorage';
+import { useAuth } from '../src/context/AuthContext';
 // 1. Mengimpor Interface Product dari layanan External API FnB
 import { Product } from '../src/services/fnbApi';
 
 export default function KasirScreen() {
+  const { cashierProfile, signOut } = useAuth();
   // 1. Penerapan useState untuk mengelola state lokal kasir POS
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [storeInfo, setStoreInfo] = useState<any>(null);
   // Menggunakan Interface Product untuk type-safety daftar menu FnB dari API
   const [products, setProducts] = useState<Product[]>([]);
@@ -43,36 +43,37 @@ export default function KasirScreen() {
 
   // 1. Penerapan useEffect untuk mengambil data awal saat komponen pertama kali dirender
   useEffect(() => {
-    loadInitialKasirData();
-  }, []);
+    if (!cashierProfile?.id) return;
 
-  const loadInitialKasirData = async () => {
-    try {
-      setIsLoading(true);
+    let active = true;
+    const loadInitialKasirData = async () => {
+      try {
+        setIsLoading(true);
 
-      // A. Ambil data sesi user aktif dari Secure Storage
-      const user = await secureStorage.getObject(secureStorage.KEYS.AUTH_USER);
-      if (!user) {
-        // Jika belum login, gunakan router.replace ke auth
-        router.replace('/auth');
-        return;
+        // A. Fetch data awal katalog produk dari Supabase
+        const initialProducts = await storage.getProducts();
+        // B. Fetch data informasi toko dari AsyncStorage
+        const initialStore = await storage.getStoreInfo();
+
+        if (active) {
+          setProducts(initialProducts);
+          setStoreInfo(initialStore);
+        }
+      } catch (error) {
+        console.error('Error saat load data kasir:', error);
+        Alert.alert('Gagal Memuat Data', 'Tidak dapat mengambil data kasir dari storage.');
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
       }
-      setCurrentUser(user);
+    };
 
-      // B. Fetch data awal katalog produk dari AsyncStorage
-      const initialProducts = await storage.getProducts();
-      setProducts(initialProducts);
-
-      // C. Fetch data informasi toko dari AsyncStorage
-      const initialStore = await storage.getStoreInfo();
-      setStoreInfo(initialStore);
-    } catch (error) {
-      console.error('Error saat load data kasir:', error);
-      Alert.alert('Gagal Memuat Data', 'Tidak dapat mengambil data kasir dari storage.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    loadInitialKasirData();
+    return () => {
+      active = false;
+    };
+  }, [cashierProfile?.id]);
 
   const refreshProductsList = async () => {
     const freshList = await storage.getProducts();
@@ -82,9 +83,7 @@ export default function KasirScreen() {
   // 2. Penerapan router.replace() saat Logout agar alur login/logout bersih
   const handleLogout = async () => {
     try {
-      await secureStorage.removeItem(secureStorage.KEYS.AUTH_USER);
-      setCurrentUser(null);
-      // Ganti route dan hapus kasir dari stack navigasi
+      await signOut();
       router.replace('/auth');
     } catch (e) {
       console.error('Gagal logout:', e);
@@ -227,14 +226,14 @@ export default function KasirScreen() {
 
   const handleCompleteTransaction = async (transaction: any) => {
     try {
-      // 1. Kurangi stok di AsyncStorage
+      // 1. Kurangi stok di Supabase
       await storage.decreaseProductStock(transaction.items);
 
-      // 2. Simpan transaksi ke riwayat di AsyncStorage
+      // 2. Simpan transaksi ke riwayat di Supabase
       const fullTransaction = {
         ...transaction,
-        cashierId: currentUser?.id,
-        cashierName: currentUser?.name || 'Kasir',
+        cashierId: cashierProfile?.id,
+        cashierName: cashierProfile?.name || 'Kasir',
       };
       await storage.addTransaction(fullTransaction);
 
@@ -286,7 +285,7 @@ export default function KasirScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* HEADER ATAS DENGAN PROFIL & LOGOUT */}
       <Header
-        currentUser={currentUser}
+        currentUser={cashierProfile}
         storeInfo={storeInfo}
         onLogout={handleLogout}
       />
@@ -313,11 +312,11 @@ export default function KasirScreen() {
 
         <TouchableOpacity
           style={styles.actionChip}
-          onPress={handleSyncApi}
+          onPress={() => router.push('/users')}
           activeOpacity={0.8}
         >
-          <Ionicons name="cloud-download-outline" size={16} color={THEME.colors.primaryDark} />
-          <Text style={styles.actionChipText}>Sync Menu API</Text>
+          {/* <Ionicons name="people-outline" size={16} color={THEME.colors.primaryDark} /> */}
+          <Text style={styles.actionChipText}></Text>
         </TouchableOpacity>
       </View>
 
@@ -387,7 +386,7 @@ export default function KasirScreen() {
               cartQuantity={quantity}
               onAddToCart={() => handleAddToCart(item)}
               onDecreaseQuantity={() => handleDecreaseQuantity(item)}
-              onAddNote={() => {}}
+              onAddNote={() => { }}
             />
           );
         }}

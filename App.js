@@ -1,4 +1,4 @@
-// Aplikasi KasirKu - Entry Point Utama, Navigasi Tab Bottom Bar & State Manajer
+// Aplikasi KasirKu - Entry Point Utama, Route Guard & Navigasi Tab Bottom Bar
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { THEME } from './src/constants/theme';
 import { storage } from './src/services/storage';
-import { secureStorage } from './src/services/secureStorage';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 // Komponen & Layar
 import Header from './src/components/Header';
@@ -25,58 +25,56 @@ import KasirScreen from './src/screens/KasirScreen';
 import MenuScreen from './src/screens/MenuScreen';
 import RiwayatScreen from './src/screens/RiwayatScreen';
 
-export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
+function MainApp() {
+  const { user, cashierProfile, loading: authLoading, signOut } = useAuth();
+
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [activeTab, setActiveTab] = useState('KASIR'); // 'KASIR' | 'MENU' | 'RIWAYAT'
 
   // Data Terpusat
   const [products, setProducts] = useState([]);
   const [storeInfo, setStoreInfo] = useState(null);
 
-  // Inisialisasi Aplikasi Saat Start
+  // Muat data POS ketika user berhasil login
   useEffect(() => {
-    initializeApp();
-  }, []);
+    if (!user?.id) return;
 
-  const initializeApp = async () => {
-    try {
-      setIsLoading(true);
-
-      // 1. Cek sesi login tersimpan di Secure Storage
-      const savedUser = await secureStorage.getObject(secureStorage.KEYS.AUTH_USER);
-      if (savedUser) {
-        setCurrentUser(savedUser);
+    let active = true;
+    const loadPosData = async () => {
+      try {
+        setIsLoadingData(true);
+        const [loadedProducts, loadedStore] = await Promise.all([
+          storage.getProducts(),
+          storage.getStoreInfo(),
+        ]);
+        if (active) {
+          setProducts(loadedProducts);
+          setStoreInfo(loadedStore);
+        }
+      } catch (e) {
+        console.error('Gagal memuat data POS:', e);
+      } finally {
+        if (active) {
+          setIsLoadingData(false);
+        }
       }
+    };
 
-      // 2. Muat data produk katalog
-      const loadedProducts = await storage.getProducts();
-      setProducts(loadedProducts);
-
-      // 3. Muat informasi toko
-      const loadedStore = await storage.getStoreInfo();
-      setStoreInfo(loadedStore);
-    } catch (e) {
-      console.error('Inisialisasi error:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    loadPosData();
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const handleRefreshProducts = async () => {
     const list = await storage.getProducts();
     setProducts(list);
   };
 
-
-  const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-  };
-
   const handleLogout = async () => {
     try {
-      await secureStorage.removeItem(secureStorage.KEYS.AUTH_USER);
-      setCurrentUser(null);
+      await signOut();
+      setProducts([]);
       setActiveTab('KASIR');
     } catch (e) {
       console.error('Logout error:', e);
@@ -105,7 +103,8 @@ export default function App() {
     },
   ];
 
-  if (isLoading) {
+  // 1. Cek sesi awal masih berlangsung
+  if (authLoading || (user && isLoadingData && products.length === 0)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={THEME.colors.primary} />
@@ -114,23 +113,24 @@ export default function App() {
     );
   }
 
-  // Jika belum login, tampilkan Layar Autentikasi
-  if (!currentUser) {
+  // 2. Route Guard: jika belum login, tampilkan AuthScreen
+  if (!user) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ExpoStatusBar style="dark" />
-        <AuthScreen onLoginSuccess={handleLoginSuccess} />
+        <AuthScreen />
       </SafeAreaView>
     );
   }
 
+  // 3. Sudah login: masuk ke aplikasi utama POS
   return (
     <SafeAreaView style={styles.safeArea}>
       <ExpoStatusBar style="dark" />
 
       {/* Header Atas Konsisten */}
       <Header
-        currentUser={currentUser}
+        currentUser={cashierProfile}
         storeInfo={storeInfo}
         onLogout={handleLogout}
       />
@@ -141,7 +141,7 @@ export default function App() {
           <KasirScreen
             products={products}
             onRefreshProducts={handleRefreshProducts}
-            currentUser={currentUser}
+            currentUser={cashierProfile}
             storeInfo={storeInfo}
           />
         )}
@@ -187,6 +187,14 @@ export default function App() {
         })}
       </View>
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
 

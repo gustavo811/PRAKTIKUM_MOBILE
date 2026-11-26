@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,150 +9,104 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Switch,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { THEME } from '../src/constants/theme';
-import { secureStorage } from '../src/services/secureStorage';
-import { storage } from '../src/services/storage';
+import { supabase, isSupabaseConfigured } from '../src/services/supabase';
 
 export default function AuthScreen() {
-  // 1. Penerapan useState untuk mengelola state lokal form autentikasi
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Form Fields State
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  // 1. Penerapan useEffect untuk mengambil data awal (kredensial tersimpan di storage)
-  useEffect(() => {
-    loadRememberedCredentials();
-  }, []);
-
-  const loadRememberedCredentials = async () => {
-    try {
-      const saved = await secureStorage.getObject(secureStorage.KEYS.REMEMBERED_CREDS);
-      if (saved && saved.username && saved.password) {
-        setUsername(saved.username);
-        setPassword(saved.password);
-        setRememberMe(true);
-      }
-    } catch (e) {
-      console.warn('Gagal memuat kredensial tersimpan:', e);
-    }
-  };
-
-  // Shortcut Akun Demo
-  const fillDemoAccount = (user: string, pass: string) => {
-    setUsername(user);
-    setPassword(pass);
+  const handleSwitchMode = (registerMode: boolean) => {
+    setIsRegister(registerMode);
+    setErrorMessage('');
   };
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Form Belum Lengkap', 'Silakan masukkan username dan password kasir.');
+    setErrorMessage('');
+    if (!email.trim() || !password) {
+      setErrorMessage('Email dan kata sandi wajib diisi.');
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      setErrorMessage('Konfigurasi Supabase di file .env belum diisi.');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const employees = await storage.getEmployees();
-      const matched = employees.find(
-        (emp) =>
-          emp.username.toLowerCase() === username.trim().toLowerCase() &&
-          emp.pin === password.trim()
-      );
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-      if (!matched) {
-        Alert.alert(
-          'Login Gagal',
-          'Username atau password tidak sesuai. Gunakan tombol demo di bawah.'
-        );
-        setIsSubmitting(false);
-        return;
+      if (error) {
+        setErrorMessage(error.message || 'Email atau kata sandi tidak sesuai.');
       }
-
-      // Simpan kredensial jika Remember Me aktif
-      if (rememberMe) {
-        await secureStorage.setItem(
-          secureStorage.KEYS.REMEMBERED_CREDS,
-          JSON.stringify({ username: username.trim(), password: password.trim() })
-        );
-      } else {
-        await secureStorage.removeItem(secureStorage.KEYS.REMEMBERED_CREDS);
-      }
-
-      // Simpan sesi user aktif di Storage
-      await secureStorage.setItem(
-        secureStorage.KEYS.AUTH_USER,
-        JSON.stringify(matched)
-      );
-
+    } catch {
+      setErrorMessage('Terjadi kesalahan sistem saat proses login.');
+    } finally {
       setIsSubmitting(false);
-
-      // 2. Penerapan router.replace() dari halaman Auth ke layar utama kasir
-      // agar halaman login terhapus dari stack navigasi dan tidak bisa di-swipe kembali!
-      router.replace('/kasir');
-    } catch (e) {
-      setIsSubmitting(false);
-      Alert.alert('Error', 'Terjadi kesalahan sistem saat proses login.');
     }
   };
 
   const handleRegister = async () => {
-    if (!fullName.trim() || !username.trim() || !password.trim()) {
-      Alert.alert('Form Belum Lengkap', 'Nama lengkap, username, dan password wajib diisi.');
+    setErrorMessage('');
+    if (!fullName.trim() || !email.trim() || !password) {
+      setErrorMessage('Nama lengkap kasir, email, dan kata sandi wajib diisi.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('Kata sandi minimal 6 karakter.');
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      setErrorMessage('Konfigurasi Supabase di file .env belum diisi.');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const employees = await storage.getEmployees();
-      const exists = employees.some(
-        (e) => e.username.toLowerCase() === username.trim().toLowerCase()
-      );
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            role: 'Kasir',
+          },
+        },
+      });
 
-      if (exists) {
-        Alert.alert('Username Terpakai', 'Username ini sudah digunakan kasir lain.');
-        setIsSubmitting(false);
+      if (error) {
+        setErrorMessage(error.message || 'Gagal mendaftarkan akun kasir.');
         return;
       }
 
-      const newEmp = {
-        name: fullName.trim(),
-        username: username.trim().toLowerCase(),
-        role: 'Kasir',
-        pin: password.trim(),
-        phone: phone.trim() || '-',
-      };
-
-      await storage.addEmployee(newEmp);
-      await secureStorage.setItem(
-        secureStorage.KEYS.AUTH_USER,
-        JSON.stringify(newEmp)
-      );
-
+      if (!data?.session) {
+        Alert.alert(
+          'Registrasi Berhasil',
+          `Akun ${fullName.trim()} berhasil dibuat. Silakan cek email untuk verifikasi (jika aktif), lalu login.`,
+          [{ text: 'OK', onPress: () => handleSwitchMode(false) }]
+        );
+      }
+    } catch {
+      setErrorMessage('Gagal mendaftarkan akun kasir.');
+    } finally {
       setIsSubmitting(false);
-      Alert.alert('Registrasi Berhasil', `Selamat datang, ${newEmp.name}!`, [
-        {
-          text: 'Masuk Kasir',
-          onPress: () => {
-            // 2. Penerapan router.replace() langsung ke layar utama kasir
-            router.replace('/kasir');
-          },
-        },
-      ]);
-    } catch (e) {
-      setIsSubmitting(false);
-      Alert.alert('Error', 'Gagal mendaftarkan akun kasir.');
     }
   };
 
@@ -184,7 +138,8 @@ export default function AuthScreen() {
           <View style={styles.toggleRow}>
             <TouchableOpacity
               style={[styles.toggleBtn, !isRegister && styles.toggleBtnActive]}
-              onPress={() => setIsRegister(false)}
+              onPress={() => handleSwitchMode(false)}
+              disabled={isSubmitting}
             >
               <Text
                 style={[styles.toggleBtnText, !isRegister && styles.toggleBtnTextActive]}
@@ -194,21 +149,29 @@ export default function AuthScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, isRegister && styles.toggleBtnActive]}
-              onPress={() => setIsRegister(true)}
+              onPress={() => handleSwitchMode(true)}
+              disabled={isSubmitting}
             >
               <Text
                 style={[styles.toggleBtnText, isRegister && styles.toggleBtnTextActive]}
               >
-                Daftar Staf
+                Daftar Kasir
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* FORM CARD */}
           <View style={styles.card}>
+            {errorMessage ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color={THEME.colors.danger} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
             {isRegister && (
               <>
-                <Text style={styles.inputLabel}>Nama Lengkap Staf</Text>
+                <Text style={styles.inputLabel}>Nama Lengkap Kasir</Text>
                 <View style={styles.inputWrapper}>
                   <Ionicons
                     name="person-outline"
@@ -221,46 +184,32 @@ export default function AuthScreen() {
                     placeholderTextColor={THEME.colors.textMuted}
                     value={fullName}
                     onChangeText={setFullName}
-                  />
-                </View>
-
-                <Text style={styles.inputLabel}>Nomor WhatsApp / HP</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons
-                    name="call-outline"
-                    size={20}
-                    color={THEME.colors.textMuted}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="0812xxxxxxxx"
-                    placeholderTextColor={THEME.colors.textMuted}
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
+                    editable={!isSubmitting}
                   />
                 </View>
               </>
             )}
 
-            <Text style={styles.inputLabel}>Username Kasir</Text>
+            <Text style={styles.inputLabel}>Email Kasir</Text>
             <View style={styles.inputWrapper}>
               <Ionicons
-                name="at-outline"
+                name="mail-outline"
                 size={20}
                 color={THEME.colors.textMuted}
               />
               <TextInput
                 style={styles.input}
-                placeholder="Masukkan username"
+                placeholder="kasir@toko.com"
                 placeholderTextColor={THEME.colors.textMuted}
                 autoCapitalize="none"
-                value={username}
-                onChangeText={setUsername}
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+                editable={!isSubmitting}
               />
             </View>
 
-            <Text style={styles.inputLabel}>Password / PIN</Text>
+            <Text style={styles.inputLabel}>Password</Text>
             <View style={styles.inputWrapper}>
               <Ionicons
                 name="lock-closed-outline"
@@ -269,15 +218,17 @@ export default function AuthScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Masukkan password / PIN"
+                placeholder="Minimal 6 karakter"
                 placeholderTextColor={THEME.colors.textMuted}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
+                editable={!isSubmitting}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                disabled={isSubmitting}
               >
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -286,23 +237,6 @@ export default function AuthScreen() {
                 />
               </TouchableOpacity>
             </View>
-
-            {!isRegister && (
-              <View style={styles.rememberRow}>
-                <View style={styles.rememberLeft}>
-                  <Switch
-                    value={rememberMe}
-                    onValueChange={setRememberMe}
-                    trackColor={{
-                      false: THEME.colors.border,
-                      true: THEME.colors.primary,
-                    }}
-                    thumbColor="#FFF"
-                  />
-                  <Text style={styles.rememberText}>Ingat Saya di Perangkat Ini</Text>
-                </View>
-              </View>
-            )}
 
             {/* TOMBOL AKSI UTAMA */}
             <TouchableOpacity
@@ -327,22 +261,6 @@ export default function AuthScreen() {
               )}
             </TouchableOpacity>
           </View>
-
-          {/* AKUN DEMO CEPAT */}
-          {!isRegister && (
-            <View style={styles.demoSection}>
-              <Text style={styles.demoTitle}>Pilihan Akun Demo Cepat:</Text>
-              <View style={styles.demoButtonsRow}>
-                <TouchableOpacity
-                  style={styles.demoChip}
-                  onPress={() => fillDemoAccount('sarah', '123456')}
-                >
-                  <Ionicons name="flash-outline" size={14} color={THEME.colors.primaryDark} />
-                  <Text style={styles.demoChipText}>Kasir Sarah (PIN: 123456)</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -423,6 +341,24 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.border,
     ...THEME.shadows.md,
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: THEME.colors.dangerLight,
+    borderWidth: 1,
+    borderColor: THEME.colors.danger,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 6,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: THEME.colors.dangerDark,
+  },
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
@@ -446,23 +382,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: THEME.colors.textPrimary,
   },
-  rememberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  rememberLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  rememberText: {
-    fontSize: 13,
-    color: THEME.colors.textSecondary,
-    fontWeight: '500',
-  },
   submitBtn: {
     backgroundColor: THEME.colors.primary,
     borderRadius: 14,
@@ -481,37 +400,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFF',
-  },
-  demoSection: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  demoTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: THEME.colors.textMuted,
-    marginBottom: 8,
-  },
-  demoButtonsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  demoChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: THEME.colors.primaryMuted,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: THEME.colors.primaryLight,
-  },
-  demoChipText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: THEME.colors.primaryDark,
   },
 });
